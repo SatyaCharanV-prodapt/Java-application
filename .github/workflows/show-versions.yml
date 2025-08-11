@@ -1,0 +1,67 @@
+name: Show Build Tool Versions
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  show-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' # Set to your required Java version
+
+      - name: Show Java version
+        run: java -version
+
+      - name: Show Maven version
+        run: mvn -version
+
+      - name: Show Gradle version
+        run: gradle --version
+
+      - name: Parse Spring Boot version from pom.xml
+        if: ${{ exists('pom.xml') }}
+        run: |
+          SPRING_BOOT_VERSION=$(xmllint --xpath "//*[local-name()='dependency'][*[local-name()='groupId']='org.springframework.boot']/*[local-name()='version']/text()" pom.xml | head -1)
+          echo "Spring Boot Version: $SPRING_BOOT_VERSION"
+          echo "SPRING_BOOT_VERSION=$SPRING_BOOT_VERSION" >> $GITHUB_ENV
+
+      - name: Parse Spring Boot version from build.gradle
+        if: ${{ exists('build.gradle') }}
+        run: |
+          SPRING_BOOT_VERSION=$(grep "spring-boot" build.gradle | grep -oE "[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?" | head -1)
+          echo "Spring Boot Version: $SPRING_BOOT_VERSION"
+          echo "SPRING_BOOT_VERSION=$SPRING_BOOT_VERSION" >> $GITHUB_ENV
+
+      # Optional: Save all versions in a file
+      - name: Collect version info
+        run: |
+          echo "Java Version:" > versions.txt
+          java -version 2>&1 | head -n 1 >> versions.txt
+          echo "" >> versions.txt
+
+          echo "Maven Version:" >> versions.txt
+          mvn -version 2>&1 | head -n 1 >> versions.txt
+          echo "" >> versions.txt
+
+          echo "Gradle Version:" >> versions.txt
+          gradle --version 2>&1 | grep Gradle >> versions.txt
+          echo "" >> versions.txt
+
+          echo "Spring Boot Version: $SPRING_BOOT_VERSION" >> versions.txt
+
+      - name: Upload versions.txt as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-tool-versions
+          path: versions.txt
