@@ -29,24 +29,23 @@ jobs:
       - name: Show Gradle version
         run: gradle --version
 
-      - name: Parse Spring Boot version from pom.xml
+      - name: Parse Spring Boot version
         run: |
           if [ -f pom.xml ]; then
-            SPRING_BOOT_VERSION=$(xmllint --xpath "//*[local-name()='dependency'][*[local-name()='groupId']='org.springframework.boot']/*[local-name()='version']/text()" pom.xml | head -1)
+            PARENT_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='artifactId'][text()='spring-boot-starter-parent']/../*[local-name()='version']/text()" pom.xml 2>/dev/null)
+            DEP_VERSION=$(xmllint --xpath "//*[local-name()='dependency'][*[local-name()='groupId']='org.springframework.boot']/*[local-name()='version']/text()" pom.xml 2>/dev/null | head -1)
+            PROP_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='properties']/*[local-name()='spring-boot.version']/text()" pom.xml 2>/dev/null)
+            SPRING_BOOT_VERSION="${PARENT_VERSION:-${DEP_VERSION:-${PROP_VERSION}}}"
+            echo "Spring Boot Version: $SPRING_BOOT_VERSION"
+            echo "SPRING_BOOT_VERSION=$SPRING_BOOT_VERSION" >> $GITHUB_ENV
+          elif [ -f build.gradle ]; then
+            PLUGIN_VERSION=$(grep -E "id\(['\"]org.springframework.boot['\"]\).*version ['\"][0-9]+\.[0-9]+\.[0-9]+" build.gradle | grep -oE "[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?" | head -1)
+            DEP_VERSION=$(grep -E "spring-boot.*:[0-9]+\.[0-9]+\.[0-9]+" build.gradle | grep -oE "[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?" | head -1)
+            SPRING_BOOT_VERSION="${PLUGIN_VERSION:-${DEP_VERSION}}"
             echo "Spring Boot Version: $SPRING_BOOT_VERSION"
             echo "SPRING_BOOT_VERSION=$SPRING_BOOT_VERSION" >> $GITHUB_ENV
           else
-            echo "No pom.xml found."
-          fi
-
-      - name: Parse Spring Boot version from build.gradle
-        run: |
-          if [ -f build.gradle ]; then
-            SPRING_BOOT_VERSION=$(grep "spring-boot" build.gradle | grep -oE "[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?" | head -1)
-            echo "Spring Boot Version: $SPRING_BOOT_VERSION"
-            echo "SPRING_BOOT_VERSION=$SPRING_BOOT_VERSION" >> $GITHUB_ENV
-          else
-            echo "No build.gradle found."
+            echo "No pom.xml or build.gradle found."
           fi
 
       - name: Collect version info
