@@ -35,9 +35,9 @@ jobs:
       - name: Parse Spring Boot version
         run: |
           if [ -f pom.xml ]; then
-            PARENT_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='artifactId'][text()='spring-boot-starter-parent']/../*[local-name()='version']/text()" pom.xml 2>/dev/null)
-            DEP_VERSION=$(xmllint --xpath "//*[local-name()='dependency'][*[local-name()='groupId']='org.springframework.boot']/*[local-name()='version']/text()" pom.xml 2>/dev/null | head -1)
-            PROP_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='properties']/*[local-name()='spring-boot.version']/text()" pom.xml 2>/dev/null)
+            PARENT_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='artifactId'][text()='spring-boot-starter-parent']/../*[local-name()='version']/text()" pom.xml 2>/dev/null || true)
+            DEP_VERSION=$(xmllint --xpath "//*[local-name()='dependency'][*[local-name()='groupId']='org.springframework.boot']/*[local-name()='version']/text()" pom.xml 2>/dev/null | head -1 || true)
+            PROP_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='properties']/*[local-name()='spring-boot.version']/text()" pom.xml 2>/dev/null || true)
             SPRING_BOOT_VERSION="${PARENT_VERSION:-${DEP_VERSION:-${PROP_VERSION}}}"
             echo "Spring Boot Version: $SPRING_BOOT_VERSION"
             echo "SPRING_BOOT_VERSION=$SPRING_BOOT_VERSION" >> $GITHUB_ENV
