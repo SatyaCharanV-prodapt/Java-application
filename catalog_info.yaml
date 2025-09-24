@@ -4,7 +4,7 @@ metadata:
   name: java-application
   description: The place to be, for great artists
   annotations:
-    github.com/project-slug: SatyaCharanV-prodapt/Java-application
+    github.com/project-slug: Meeranmk/portfolio
 spec:
   type: website
   lifecycle: production
